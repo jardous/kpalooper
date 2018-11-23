@@ -36,26 +36,20 @@ void handleEvent(AceButton* /* button */, uint8_t eventType, uint8_t buttonState
       if (state == EMPTY) {
         state = RECORD;
         Serial.println("RECORDING");
-        // Rec/Play/Overdub CC#99 V125, CC#98 V88, CC#06 V0, CC#38 V1 (on press), V0 (on release)
         //sendNrpn(125, 88, 0, 1);
         sendNrpn(16088, 1);  // -- just start recording
 
         flash();
-        uint32_t color = strip.Color(0xFF, 0, 0);
-        strip.setPixelColor(0, color);
-        strip.show();
+        setLed(0xFF, 0, 0);
+      
       } else if (state == STOP) {
         state = PLAY;
         Serial.println("PLAY");
-        //sendNrpn(125, 88, 0, 0);
-        //sendNrpn(125, 88, 0, 1);
         sendNrpn(16093, 0);
         sendNrpn(16093, 1);
 
         flash();
-        uint32_t color = strip.Color(0, 0xFF, 0);
-        strip.setPixelColor(0, color);
-        strip.show();
+        setLed(0, 0xFF, 0);
         
       } else if (state == PLAY) {
         state = RECORD;
@@ -64,9 +58,7 @@ void handleEvent(AceButton* /* button */, uint8_t eventType, uint8_t buttonState
         sendNrpn(16088, 1);
 
         flash();
-        uint32_t color = strip.Color(0xFF, 0, 0);
-        strip.setPixelColor(0, color);
-        strip.show();
+        setLed(0xFF, 0, 0);
         
       } else if (state == RECORD) {
         state = PLAY;
@@ -75,9 +67,7 @@ void handleEvent(AceButton* /* button */, uint8_t eventType, uint8_t buttonState
         sendNrpn(16088, 0);
 
         flash();
-        uint32_t color = strip.Color(0, 0xFF, 0);
-        strip.setPixelColor(0, color);
-        strip.show();
+        setLed(0, 0xFF, 0);
       }
       break;
 
@@ -93,9 +83,7 @@ void handleEvent(AceButton* /* button */, uint8_t eventType, uint8_t buttonState
         same_cc_cnt = 0;
 
         flash();
-        uint32_t color = strip.Color(0, 0, 0);
-        strip.setPixelColor(0, color);
-        strip.show();
+        setLed(0, 0, 0);
 
         return;
       }
@@ -105,18 +93,14 @@ void handleEvent(AceButton* /* button */, uint8_t eventType, uint8_t buttonState
         Serial.println("state is EMPTY");
 
         flash();
-        uint32_t color = strip.Color(0, 0, 0);
-        strip.setPixelColor(0, color);
-        strip.show();
+        setLed(0, 0, 0);
         
       } else {
         state = STOP;
         Serial.println("state is STOP");
 
         flash();
-        uint32_t color = strip.Color(0x44, 0x44, 0x44);
-        strip.setPixelColor(0, color);
-        strip.show();
+        setLed(0x44, 0x44, 0x44);
       }
 
       break;
@@ -133,10 +117,12 @@ void buttons_setup() {
   // level events.
   ButtonConfig* buttonConfig = button.getButtonConfig();
   buttonConfig->setEventHandler(handleEvent);
-  buttonConfig->setClickDelay(400);
+  //buttonConfig->setClickDelay(400);
   
   buttonConfig->setFeature(ButtonConfig::kFeatureClick);
   //buttonConfig->setFeature(ButtonConfig::kFeatureDoubleClick);
   buttonConfig->setFeature(ButtonConfig::kFeatureLongPress);
   //buttonConfig->setFeature(ButtonConfig::kFeatureRepeatPress);
+
+  state = EMPTY;
 }

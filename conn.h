@@ -16,7 +16,7 @@ BLEClientMidi clientMidi;
 
 
 static byte cc_msg[] = { 0x00, 0x00, 0x00, 0x00, 0x00 };
-void kpaSendControlChange(uint8_t ctrlNum, uint8_t val, uint8_t chanNum = MIDI_CHANNEL)
+void sendControlChange(uint8_t ctrlNum, uint8_t val, uint8_t chanNum = MIDI_CHANNEL)
 {
   short t = millis() & 0xFFFF;
   cc_msg[0] = (t >> 7) & 0x3F | 0x80;
@@ -29,10 +29,10 @@ void kpaSendControlChange(uint8_t ctrlNum, uint8_t val, uint8_t chanNum = MIDI_C
 }
 
 void sendNrpn(byte addr_msb, byte addr_lsb, byte val_msb, byte val_lsb) {
-  kpaSendControlChange(99, addr_msb);
-  kpaSendControlChange(98, addr_lsb);
-  kpaSendControlChange(06, val_msb);
-  kpaSendControlChange(38, val_lsb);
+  sendControlChange(99, addr_msb);
+  sendControlChange(98, addr_lsb);
+  sendControlChange(06, val_msb);
+  sendControlChange(38, val_lsb);
   clientMidi.flush();
 }
 void sendNrpn(short nrpn, short value) {
@@ -101,18 +101,16 @@ void connect_callback(uint16_t conn_handle)
     Serial.println(clientMidi.enableTXD());
 
     Serial.println("Ready to receive from peripheral");
-    ledRainbow.m_active = false;
-
-    uint32_t color = strip.Color(0x55, 0x55, 0x55);
-    strip.setPixelColor(0, color);
-    strip.show();
+    
+    LEDBounce.stop();
+    setLed(0, 0, 0);
     
   } else {
     Serial.println("Found NONE");
 
     // disconect since we couldn't find bleMidi service
     Bluefruit.Central.disconnect(conn_handle);
-    ledRainbow.reset();
+    LEDBounce.reset();
   }
 }
 
@@ -127,7 +125,7 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
   (void) reason;
 
   Serial.println("Disconnected");
-  ledRainbow.reset();
+  LEDBounce.reset();
 }
 
 
