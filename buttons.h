@@ -3,33 +3,69 @@
 #include <AdjustableButtonConfig.h>
 using namespace ace_button;
 
-// The pin number attached to the button.
+// The pin number attached to the mode switching button.
+const int MODE_BUTTON_PIN = A1;
+// The pin number attached to the controller button.
 const int BUTTON_PIN = A0;
 
 
 // One button wired to the pin at BUTTON_PIN. Automatically uses the default
 // ButtonConfig. The alternative is to call the AceButton::init() method in
 // setup() below.
-AceButton button(BUTTON_PIN);
+AceButton buttonMode(MODE_BUTTON_PIN);
+AceButton buttonController(BUTTON_PIN);
 
+typedef enum {STOMP, LOOPER} ControllerMode;
+ControllerMode mode = STOMP;
 
 typedef enum {EMPTY, RECORD, PLAY, STOP, RESUME} LooperState;
-LooperState state;
+LooperState state = EMPTY;
 
 
-int same_cc_cnt = 0;
-// The event handler for the button.
-void handleEvent(AceButton* /* button */, uint8_t eventType, uint8_t buttonState) {
+
+bool lastX = false;
+bool lastDelay = false;
+void handleEventStomp(AceButton* /* button */, uint8_t eventType, uint8_t buttonState) {
 
   // Print out a message for all events.
-  Serial.print(F("handleEvent(): eventType: "));
+  Serial.print(F("STOMP handleEvent(): eventType: "));
   Serial.print(eventType);
   Serial.print(F("; buttonState: "));
   Serial.println(buttonState);
 
-  // Control the LED only for the Pressed and Released events.
-  // Notice that if the MCU is rebooted while the button is pressed down, no
-  // event is triggered and the LED remains off.
+  switch (eventType) {
+    case AceButton::kEventClicked:
+        // Stomp X on/off
+        lastX = !lastX;
+        sendControlChange(X, lastX);
+
+        flash();
+        setLed(0xFF && lastX, 0xFF && lastDelay, 0);
+      break;
+
+    case AceButton::kEventLongPressed:
+        // Delay on/off
+        lastDelay = !lastDelay;
+        sendControlChange(X, lastX);
+
+        flash();
+        setLed(0xFF && lastX, 0xFF && lastDelay, 0);
+      break;
+  }
+}
+
+
+
+int same_cc_cnt = 0;
+// The event handler for the button.
+void handleEventLooper(AceButton* /* button */, uint8_t eventType, uint8_t buttonState) {
+
+  // Print out a message for all events.
+  Serial.print(F("LOOPE handleEvent(): eventType: "));
+  Serial.print(eventType);
+  Serial.print(F("; buttonState: "));
+  Serial.println(buttonState);
+
   switch (eventType) {
     case AceButton::kEventClicked:
       same_cc_cnt = 0;
@@ -109,20 +145,68 @@ void handleEvent(AceButton* /* button */, uint8_t eventType, uint8_t buttonState
 
 
 
-void buttons_setup() {
-  // Button uses the built-in pull up register.
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+ControllerMode lastMode = STOMP;
+void handleEventMode(AceButton* /* button */, uint8_t eventType, uint8_t buttonState) {
 
+  // Print out a message for all events.
+  Serial.print(F("STOMP handleEvent(): eventType: "));
+  Serial.print(eventType);
+  Serial.print(F("; buttonState: "));
+  Serial.println(buttonState);
+
+  switch (eventType) {
+    
+    case AceButton::kEventLongPressed:
+      
+      if (mode == STOMP) {
+        mode = LOOPER;
+      } else {  // looper
+        mode == STOMP;
+      }
+
+      setMode(mode);
+      
+      break;
+  }
+}
+
+
+
+void setMode(ControllerMode newMode) {
+
+  // CONTROL
   // Configure the ButtonConfig with the event handler, and enable all higher
   // level events.
-  ButtonConfig* buttonConfig = button.getButtonConfig();
-  buttonConfig->setEventHandler(handleEvent);
+  ButtonConfig* buttonConfig = buttonController.getButtonConfig();
+  if (newMode == STOMP)
+    buttonConfig->setEventHandler(handleEventStomp);
+  else
+    buttonConfig->setEventHandler(handleEventLooper);
   //buttonConfig->setClickDelay(400);
   
   buttonConfig->setFeature(ButtonConfig::kFeatureClick);
   //buttonConfig->setFeature(ButtonConfig::kFeatureDoubleClick);
   buttonConfig->setFeature(ButtonConfig::kFeatureLongPress);
   //buttonConfig->setFeature(ButtonConfig::kFeatureRepeatPress);
+}
 
-  state = EMPTY;
+
+void buttons_setup() {
+
+  // MODE
+  // Button uses the built-in pull up register.
+  pinMode(MODE_BUTTON_PIN, INPUT_PULLUP);
+  // Configure the ButtonConfig with the event handler, and enable all higher
+  // level events.
+  ButtonConfig* buttonConfig = buttonMode.getButtonConfig();
+  buttonConfig->setEventHandler(handleEventMode);
+  //buttonConfig->setClickDelay(400);
+  
+  buttonConfig->setFeature(ButtonConfig::kFeatureClick);
+  buttonConfig->setFeature(ButtonConfig::kFeatureLongPress);
+
+
+  // CONTROL
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  setMode(STOMP);
 }

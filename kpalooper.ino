@@ -38,6 +38,7 @@ void blemidi_rx_callback(BLEClientMidi& midi_svc)
   Serial.println();
 }
 
+
 void loop()
 {
   button.check();
